@@ -9,6 +9,11 @@ import { OnboardingScreen } from "./components/screens/OnboardingScreen";
 import { LoginScreen } from "./components/screens/LoginScreen";
 import { Dashboard } from "./components/screens/Dashboard";
 import { WeeklyMenu } from "./components/screens/WeeklyMenu";
+import { MealCustomization } from "./components/screens/MealCustomization";
+import { Checkout } from "./components/screens/Checkout";
+import { SubscriptionPlans } from "./components/screens/SubscriptionPlans";
+import { OrderTracking } from "./components/screens/OrderTracking";
+import { Profile } from "./components/screens/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,9 +31,12 @@ const App = () => (
           <Route path="/" element={<MobileLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="menu" element={<WeeklyMenu />} />
-            <Route path="orders" element={<div className="p-4">Orders coming soon...</div>} />
-            <Route path="subscription" element={<div className="p-4">Subscription coming soon...</div>} />
-            <Route path="profile" element={<div className="p-4">Profile coming soon...</div>} />
+            <Route path="customize" element={<MealCustomization />} />
+            <Route path="checkout" element={<Checkout />} />
+            <Route path="subscription" element={<SubscriptionPlans />} />
+            <Route path="orders" element={<OrderTracking />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="wallet" element={<div className="p-4">Wallet coming soon...</div>} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
