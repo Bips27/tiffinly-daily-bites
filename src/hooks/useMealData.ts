@@ -84,12 +84,12 @@ export const useMealData = () => {
 
   const getCustomizationStatus = (meal: Meal) => {
     if (meal.isCustomized) {
-      return { canCustomize: false, status: 'customized', message: 'Already customized' };
+      return { canCustomize: false, status: 'customized' as const, message: 'Already customized' };
     }
     if (canCustomizeMeal(meal.deliveryTime)) {
-      return { canCustomize: true, status: 'open', message: 'Customizable' };
+      return { canCustomize: true, status: 'open' as const, message: 'Customizable' };
     }
-    return { canCustomize: false, status: 'closed', message: 'Customization closed' };
+    return { canCustomize: false, status: 'closed' as const, message: 'Customization closed' };
   };
 
   const customizeMeal = (mealId: number, customization: any, fee: number) => {
