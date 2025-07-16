@@ -10,42 +10,48 @@ export interface Meal {
   calories: number;
   image: string;
   deliveryTime: Date;
+  isCustomized?: boolean;
+  customizationFee?: number;
 }
 
 export const useMealData = () => {
+  // Test data with current time at 8:00 AM
   const [meals, setMeals] = useState<Meal[]>([
     {
       id: 1,
       type: 'Breakfast',
       name: 'Poha Bowl',
-      time: '8:00 AM',
-      status: 'delivered',
+      time: '8:30 AM',
+      status: 'preparing',
       items: ['Poha', 'Masala Tea', 'Fresh Fruits'],
       calories: 320,
       image: '🥣',
-      deliveryTime: new Date(new Date().setHours(8, 0, 0, 0))
+      deliveryTime: new Date(new Date().setHours(8, 30, 0, 0)),
+      isCustomized: false
     },
     {
       id: 2,
       type: 'Lunch',
       name: 'Dal Rice Bowl',
       time: '1:00 PM',
-      status: 'preparing',
+      status: 'scheduled',
       items: ['Dal Rice', 'Mixed Vegetables', 'Roti', 'Pickle'],
       calories: 450,
       image: '🍛',
-      deliveryTime: new Date(new Date().setHours(13, 0, 0, 0))
+      deliveryTime: new Date(new Date().setHours(13, 0, 0, 0)),
+      isCustomized: false
     },
     {
       id: 3,
       type: 'Dinner',
       name: 'Paneer Curry Bowl',
-      time: '7:30 PM',
+      time: '8:00 PM',
       status: 'scheduled',
       items: ['Paneer Curry', 'Jeera Rice', 'Chapati', 'Salad'],
       calories: 420,
       image: '🍽️',
-      deliveryTime: new Date(new Date().setHours(19, 30, 0, 0))
+      deliveryTime: new Date(new Date().setHours(20, 0, 0, 0)),
+      isCustomized: false
     }
   ]);
 
@@ -69,9 +75,29 @@ export const useMealData = () => {
   };
 
   const canCustomizeMeal = (deliveryTime: Date) => {
-    const now = new Date();
+    // Test time: 8:00 AM
+    const testTime = new Date();
+    testTime.setHours(8, 0, 0, 0);
     const cutoffTime = new Date(deliveryTime.getTime() - 2 * 60 * 60 * 1000); // 2 hours before
-    return now < cutoffTime;
+    return testTime < cutoffTime;
+  };
+
+  const getCustomizationStatus = (meal: Meal) => {
+    if (meal.isCustomized) {
+      return { canCustomize: false, status: 'customized', message: 'Already customized' };
+    }
+    if (canCustomizeMeal(meal.deliveryTime)) {
+      return { canCustomize: true, status: 'open', message: 'Customizable' };
+    }
+    return { canCustomize: false, status: 'closed', message: 'Customization closed' };
+  };
+
+  const customizeMeal = (mealId: number, customization: any, fee: number) => {
+    setMeals(prev => prev.map(meal => 
+      meal.id === mealId 
+        ? { ...meal, isCustomized: true, customizationFee: fee, ...customization }
+        : meal
+    ));
   };
 
   const refreshMeals = async () => {
@@ -87,6 +113,8 @@ export const useMealData = () => {
     getNextMeal,
     getMealCountdown,
     canCustomizeMeal,
+    getCustomizationStatus,
+    customizeMeal,
     refreshMeals
   };
 };

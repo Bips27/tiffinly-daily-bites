@@ -36,7 +36,7 @@ export const MealCustomization = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { canCustomizeMeal, getMealCountdown } = useMealData();
+  const { canCustomizeMeal, getMealCountdown, getCustomizationStatus, customizeMeal } = useMealData();
   
   const [selectedExtras, setSelectedExtras] = useState<{[key: number]: number}>({});
   const [selectedAlternative, setSelectedAlternative] = useState<number | null>(null);
@@ -50,13 +50,14 @@ export const MealCustomization = () => {
   useEffect(() => {
     const updateTime = () => {
       if (meal.deliveryTime) {
-        const canCustom = canCustomizeMeal(meal.deliveryTime);
-        setCanCustomize(canCustom);
+        const customizationStatus = getCustomizationStatus(meal);
+        setCanCustomize(customizationStatus.canCustomize);
         
-        if (canCustom) {
-          setTimeRemaining(getMealCountdown(new Date(meal.deliveryTime.getTime() - 2 * 60 * 60 * 1000)));
+        if (customizationStatus.canCustomize) {
+          const cutoffTime = new Date(meal.deliveryTime.getTime() - 2 * 60 * 60 * 1000);
+          setTimeRemaining(getMealCountdown(cutoffTime));
         } else {
-          setTimeRemaining('Cutoff passed');
+          setTimeRemaining(customizationStatus.message);
         }
       }
     };
@@ -92,10 +93,11 @@ export const MealCustomization = () => {
   };
 
   const handleCheckout = () => {
-    if (!canCustomize) {
+    const customizationStatus = getCustomizationStatus(meal);
+    if (!customizationStatus.canCustomize) {
       toast({
-        title: "Customization Closed",
-        description: "Changes are no longer allowed for this meal",
+        title: "Customization Not Available",
+        description: customizationStatus.message,
         variant: "destructive",
       });
       return;
@@ -115,7 +117,8 @@ export const MealCustomization = () => {
         meal, 
         extras: selectedExtras, 
         alternative: selectedAlternative,
-        totalExtra: getTotalExtra() 
+        totalExtra: getTotalExtra(),
+        customizeMeal: customizeMeal // Pass the function to checkout
       } 
     });
   };
@@ -170,26 +173,26 @@ export const MealCustomization = () => {
         </div>
 
         <div className="px-4 space-y-6 pb-32">
-        {/* Cutoff Warning */}
-        <Card className={`p-4 ${canCustomize ? 'bg-accent/10 border-accent' : 'bg-destructive/10 border-destructive'}`}>
+        {/* Customization Status */}
+        <Card className={`p-4 ${canCustomize ? 'bg-success/10 border-success' : 'bg-destructive/10 border-destructive'}`}>
           <div className="flex items-center space-x-3">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-              canCustomize ? 'bg-accent/20' : 'bg-destructive/20'
+              canCustomize ? 'bg-success/20' : 'bg-destructive/20'
             }`}>
               {canCustomize ? (
-                <Clock className={`w-5 h-5 ${canCustomize ? 'text-accent' : 'text-destructive'}`} />
+                <Clock className="w-5 h-5 text-success" />
               ) : (
                 <AlertTriangle className="w-5 h-5 text-destructive" />
               )}
             </div>
             <div className="flex-1">
-              <p className={`font-medium ${canCustomize ? 'text-accent' : 'text-destructive'}`}>
-                {canCustomize ? 'Customization Available' : 'Customization Closed'}
+              <p className={`font-medium ${canCustomize ? 'text-success' : 'text-destructive'}`}>
+                {canCustomize ? '✅ Customization Available' : '❌ Customization Closed'}
               </p>
               <p className="text-sm text-muted-foreground">
                 {canCustomize 
-                  ? `Time remaining: ${timeRemaining}` 
-                  : 'Changes allowed up to 2 hours before delivery'}
+                  ? `Changes allowed until 2 hours before delivery (${meal.time})` 
+                  : timeRemaining}
               </p>
             </div>
           </div>

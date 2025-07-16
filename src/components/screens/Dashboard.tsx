@@ -12,7 +12,7 @@ import heroTiffin from '@/assets/hero-tiffin.jpg';
 export const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { meals, loading, getNextMeal, getMealCountdown, canCustomizeMeal, refreshMeals } = useMealData();
+  const { meals, loading, getNextMeal, getMealCountdown, canCustomizeMeal, getCustomizationStatus, refreshMeals } = useMealData();
   const { balance } = useWallet();
   const [refreshing, setRefreshing] = useState(false);
   const [nextMealCountdown, setNextMealCountdown] = useState('');
@@ -49,20 +49,21 @@ export const Dashboard = () => {
     }
   };
 
-  const handleCustomizeMeal = () => {
-    const nextMeal = getNextMeal();
-    if (!nextMeal) return;
+  const handleCustomizeMeal = (meal?: any) => {
+    const targetMeal = meal || getNextMeal();
+    if (!targetMeal) return;
 
-    if (!canCustomizeMeal(nextMeal.deliveryTime)) {
+    const customizationStatus = getCustomizationStatus(targetMeal);
+    if (!customizationStatus.canCustomize) {
       toast({
-        title: "Customization Closed",
-        description: "Changes are allowed up to 2 hours before delivery",
+        title: "Customization Not Available",
+        description: customizationStatus.message,
         variant: "destructive",
       });
       return;
     }
 
-    navigate('/customize', { state: { meal: nextMeal } });
+    navigate('/customize', { state: { meal: targetMeal } });
   };
 
   if (loading) {
@@ -146,28 +147,63 @@ export const Dashboard = () => {
         <section>
           <h3 className="text-xl font-bold mb-4">Today's Meals</h3>
           <div className="space-y-3">
-            {meals.map((meal) => (
-              <Card 
-                key={meal.id} 
-                className="p-4 shadow-card hover:shadow-elevated transition-all duration-200 cursor-pointer active:scale-[0.98]"
-                onClick={() => navigate('/tracking', { state: { meal } })}
-              >
-                <div className="flex items-center space-x-4">
-                  <div className="text-3xl">{meal.image}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-foreground truncate">{meal.name}</h4>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusColor(meal.status)}`}>
-                        {getStatusText(meal.status)}
-                      </span>
+            {meals.map((meal) => {
+              const customizationStatus = getCustomizationStatus(meal);
+              return (
+                <Card 
+                  key={meal.id} 
+                  className="p-4 shadow-card hover:shadow-elevated transition-all duration-200"
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className="text-3xl">{meal.image}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-semibold text-foreground truncate">{meal.name}</h4>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusColor(meal.status)}`}>
+                          {getStatusText(meal.status)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">{meal.time} • {meal.calories} calories</p>
+                      <p className="text-sm text-muted-foreground truncate mb-2">{meal.items.join(', ')}</p>
+                      
+                      {/* Customization Status */}
+                      <div className="flex items-center justify-between">
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          customizationStatus.status === 'open' ? 'bg-success/10 text-success' :
+                          customizationStatus.status === 'customized' ? 'bg-primary/10 text-primary' :
+                          'bg-destructive/10 text-destructive'
+                        }`}>
+                          {customizationStatus.status === 'open' && '✅ Customizable'}
+                          {customizationStatus.status === 'customized' && '🎯 Customized'}
+                          {customizationStatus.status === 'closed' && '❌ Customization Closed'}
+                        </span>
+                        
+                        <div className="flex space-x-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => navigate('/tracking', { state: { meal } })}
+                            className="text-xs"
+                          >
+                            Track
+                          </Button>
+                          {customizationStatus.canCustomize && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleCustomizeMeal(meal)}
+                              className="text-xs"
+                            >
+                              Customize
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-1">{meal.time} • {meal.calories} calories</p>
-                    <p className="text-sm text-muted-foreground truncate">{meal.items.join(', ')}</p>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                </div>
-              </Card>
-            ))}
+                </Card>
+              );
+            })}
           </div>
         </section>
 
