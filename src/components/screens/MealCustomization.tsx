@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Clock, Plus, Minus, AlertTriangle, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, Clock, Plus, Minus, AlertTriangle, ShoppingCart, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { useToast } from '@/hooks/use-toast';
+import { useMealData } from '@/hooks/useMealData';
 
 const currentMeal = {
   type: 'Lunch',
@@ -31,28 +34,37 @@ const alternatives = [
 
 export const MealCustomization = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { toast } = useToast();
+  const { canCustomizeMeal, getMealCountdown } = useMealData();
+  
   const [selectedExtras, setSelectedExtras] = useState<{[key: number]: number}>({});
   const [selectedAlternative, setSelectedAlternative] = useState<number | null>(null);
   const [timeRemaining, setTimeRemaining] = useState('1h 45m');
   const [canCustomize, setCanCustomize] = useState(true);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+
+  // Get meal from navigation state or use default
+  const meal = location.state?.meal || currentMeal;
 
   useEffect(() => {
-    // Simulate countdown to cutoff time
     const updateTime = () => {
-      const now = new Date();
-      const cutoff = new Date();
-      cutoff.setHours(11, 0, 0, 0); // 2 hours before 1 PM
-      
-      if (now > cutoff) {
-        setCanCustomize(false);
-        setTimeRemaining('Cutoff passed');
+      if (meal.deliveryTime) {
+        const canCustom = canCustomizeMeal(meal.deliveryTime);
+        setCanCustomize(canCustom);
+        
+        if (canCustom) {
+          setTimeRemaining(getMealCountdown(new Date(meal.deliveryTime.getTime() - 2 * 60 * 60 * 1000)));
+        } else {
+          setTimeRemaining('Cutoff passed');
+        }
       }
     };
     
     updateTime();
     const interval = setInterval(updateTime, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [meal]);
 
   const getTotalExtra = () => {
     let total = 0;
@@ -80,9 +92,27 @@ export const MealCustomization = () => {
   };
 
   const handleCheckout = () => {
+    if (!canCustomize) {
+      toast({
+        title: "Customization Closed",
+        description: "Changes are no longer allowed for this meal",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (getTotalExtra() === 0) {
+      toast({
+        title: "No Changes",
+        description: "Please select items to customize or go back",
+        variant: "destructive",
+      });
+      return;
+    }
+
     navigate('/checkout', { 
       state: { 
-        meal: currentMeal, 
+        meal, 
         extras: selectedExtras, 
         alternative: selectedAlternative,
         totalExtra: getTotalExtra() 
@@ -90,28 +120,56 @@ export const MealCustomization = () => {
     });
   };
 
+  const handleCancelChanges = () => {
+    if (getTotalExtra() > 0 || selectedAlternative) {
+      setShowCancelDialog(true);
+    } else {
+      navigate(-1);
+    }
+  };
+
+  const confirmCancelChanges = () => {
+    setSelectedExtras({});
+    setSelectedAlternative(null);
+    setShowCancelDialog(false);
+    navigate(-1);
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="sticky top-0 bg-background/95 backdrop-blur-md border-b border-border p-4 z-40">
-        <div className="flex items-center space-x-4">
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={() => navigate(-1)}
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-xl font-bold">Customize Meal</h1>
-            <p className="text-sm text-muted-foreground">
-              {currentMeal.type} • {currentMeal.time}
-            </p>
+    <>
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <div className="sticky top-0 bg-background/95 backdrop-blur-md border-b border-border p-4 z-40">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={handleCancelChanges}
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <div className="flex-1">
+                <h1 className="text-xl font-bold">Customize Meal</h1>
+                <p className="text-sm text-muted-foreground">
+                  {meal.type} • {meal.time}
+                </p>
+              </div>
+            </div>
+            {(getTotalExtra() > 0 || selectedAlternative) && (
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setShowCancelDialog(true)}
+                className="text-muted-foreground"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            )}
           </div>
         </div>
-      </div>
 
-      <div className="px-4 space-y-6 pb-32">
+        <div className="px-4 space-y-6 pb-32">
         {/* Cutoff Warning */}
         <Card className={`p-4 ${canCustomize ? 'bg-accent/10 border-accent' : 'bg-destructive/10 border-destructive'}`}>
           <div className="flex items-center space-x-3">
@@ -137,128 +195,147 @@ export const MealCustomization = () => {
           </div>
         </Card>
 
-        {/* Current Meal */}
-        <section>
-          <h2 className="text-lg font-bold mb-3">Current Meal</h2>
-          <Card className="p-4 shadow-card">
-            <div className="flex items-center space-x-4">
-              <div className="text-4xl">{currentMeal.image}</div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-lg">{currentMeal.name}</h3>
-                <div className="mt-2 space-y-1">
-                  {currentMeal.items.map(item => (
-                    <div key={item.id} className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-success rounded-full" />
-                      <span className="text-sm text-muted-foreground">{item.name}</span>
-                    </div>
-                  ))}
+          {/* Current Meal */}
+          <section>
+            <h2 className="text-lg font-bold mb-3">Current Meal</h2>
+            <Card className="p-4 shadow-card">
+              <div className="flex items-center space-x-4">
+                <div className="text-4xl">{meal.image}</div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg">{meal.name}</h3>
+                  <div className="mt-2 space-y-1">
+                    {meal.items.map((item, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-success rounded-full flex-shrink-0" />
+                        <span className="text-sm text-muted-foreground">{item}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
+            </Card>
+          </section>
+
+          {/* Alternative Meals */}
+          <section>
+            <h2 className="text-lg font-bold mb-3">Switch to Different Meal</h2>
+            <div className="space-y-3">
+              {alternatives.map(item => (
+                <Card 
+                  key={item.id}
+                  className={`p-4 shadow-card cursor-pointer transition-all duration-200 active:scale-[0.98] ${
+                    selectedAlternative === item.id ? 'ring-2 ring-primary bg-primary/5' : ''
+                  } ${!canCustomize ? 'opacity-50 pointer-events-none' : ''}`}
+                  onClick={() => canCustomize && setSelectedAlternative(
+                    selectedAlternative === item.id ? null : item.id
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                      <span className="text-2xl flex-shrink-0">{item.image}</span>
+                      <div className="min-w-0">
+                        <h4 className="font-medium truncate">{item.name}</h4>
+                        <p className="text-sm text-muted-foreground">+₹{item.price}</p>
+                      </div>
+                    </div>
+                    <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 ${
+                      selectedAlternative === item.id 
+                        ? 'bg-primary border-primary' 
+                        : 'border-border'
+                    }`}>
+                      {selectedAlternative === item.id && (
+                        <div className="w-full h-full rounded-full bg-white scale-50" />
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              ))}
             </div>
-          </Card>
-        </section>
+          </section>
 
-        {/* Alternative Meals */}
-        <section>
-          <h2 className="text-lg font-bold mb-3">Switch to Different Meal</h2>
-          <div className="space-y-3">
-            {alternatives.map(item => (
-              <Card 
-                key={item.id}
-                className={`p-4 shadow-card cursor-pointer transition-all duration-200 ${
-                  selectedAlternative === item.id ? 'ring-2 ring-primary bg-primary/5' : ''
-                } ${!canCustomize ? 'opacity-50 pointer-events-none' : ''}`}
-                onClick={() => canCustomize && setSelectedAlternative(
-                  selectedAlternative === item.id ? null : item.id
-                )}
+          {/* Extra Items */}
+          <section>
+            <h2 className="text-lg font-bold mb-3">Add Extra Items</h2>
+            <div className="space-y-3">
+              {extraItems.map(item => (
+                <Card key={item.id} className={`p-4 shadow-card ${!canCustomize ? 'opacity-50' : ''}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                      <span className="text-2xl flex-shrink-0">{item.image}</span>
+                      <div className="min-w-0">
+                        <h4 className="font-medium truncate">{item.name}</h4>
+                        <p className="text-sm text-muted-foreground">₹{item.price} each</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-3 flex-shrink-0">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="w-8 h-8 touch-manipulation"
+                        onClick={() => updateExtraQuantity(item.id, -1)}
+                        disabled={!canCustomize || !selectedExtras[item.id]}
+                      >
+                        <Minus className="w-4 h-4" />
+                      </Button>
+                      <span className="w-8 text-center font-medium">
+                        {selectedExtras[item.id] || 0}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="w-8 h-8 touch-manipulation"
+                        onClick={() => updateExtraQuantity(item.id, 1)}
+                        disabled={!canCustomize}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        {/* Fixed Bottom Checkout */}
+        {(getTotalExtra() > 0 || selectedAlternative) && (
+          <div className="fixed bottom-20 left-0 right-0 p-4 bg-background/95 backdrop-blur-md border-t border-border z-50">
+            <Card className="p-4 shadow-elevated">
+              <div className="flex items-center justify-between mb-3">
+                <span className="font-medium">Extra charges:</span>
+                <span className="text-lg font-bold text-primary">₹{getTotalExtra()}</span>
+              </div>
+              <Button 
+                className="w-full touch-manipulation" 
+                onClick={handleCheckout}
+                disabled={!canCustomize}
+                size="lg"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-2xl">{item.image}</span>
-                    <div>
-                      <h4 className="font-medium">{item.name}</h4>
-                      <p className="text-sm text-muted-foreground">+₹{item.price}</p>
-                    </div>
-                  </div>
-                  <div className={`w-5 h-5 rounded-full border-2 ${
-                    selectedAlternative === item.id 
-                      ? 'bg-primary border-primary' 
-                      : 'border-border'
-                  }`}>
-                    {selectedAlternative === item.id && (
-                      <div className="w-full h-full rounded-full bg-white scale-50" />
-                    )}
-                  </div>
-                </div>
-              </Card>
-            ))}
+                <ShoppingCart className="w-4 h-4 mr-2" />
+                Proceed to Checkout
+              </Button>
+              {!canCustomize && (
+                <p className="text-xs text-destructive mt-2 text-center">
+                  Customization window has closed
+                </p>
+              )}
+            </Card>
           </div>
-        </section>
-
-        {/* Extra Items */}
-        <section>
-          <h2 className="text-lg font-bold mb-3">Add Extra Items</h2>
-          <div className="space-y-3">
-            {extraItems.map(item => (
-              <Card key={item.id} className="p-4 shadow-card">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-2xl">{item.image}</span>
-                    <div>
-                      <h4 className="font-medium">{item.name}</h4>
-                      <p className="text-sm text-muted-foreground">₹{item.price} each</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-3">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="w-8 h-8"
-                      onClick={() => updateExtraQuantity(item.id, -1)}
-                      disabled={!canCustomize || !selectedExtras[item.id]}
-                    >
-                      <Minus className="w-4 h-4" />
-                    </Button>
-                    <span className="w-8 text-center font-medium">
-                      {selectedExtras[item.id] || 0}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="w-8 h-8"
-                      onClick={() => updateExtraQuantity(item.id, 1)}
-                      disabled={!canCustomize}
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </section>
+        )}
       </div>
 
-      {/* Fixed Bottom Checkout */}
-      {(getTotalExtra() > 0 || selectedAlternative) && (
-        <div className="fixed bottom-20 left-0 right-0 p-4 bg-background/95 backdrop-blur-md border-t border-border">
-          <Card className="p-4 shadow-elevated">
-            <div className="flex items-center justify-between mb-3">
-              <span className="font-medium">Extra charges:</span>
-              <span className="text-lg font-bold text-primary">₹{getTotalExtra()}</span>
-            </div>
-            <Button 
-              className="w-full" 
-              onClick={handleCheckout}
-              disabled={!canCustomize}
-            >
-              <ShoppingCart className="w-4 h-4 mr-2" />
-              Proceed to Checkout
-            </Button>
-          </Card>
-        </div>
-      )}
-    </div>
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        open={showCancelDialog}
+        onOpenChange={setShowCancelDialog}
+        title="Cancel Changes?"
+        description="You have unsaved changes. Are you sure you want to go back? All changes will be lost."
+        confirmText="Yes, Cancel"
+        cancelText="Keep Editing"
+        variant="destructive"
+        onConfirm={confirmCancelChanges}
+      />
+    </>
   );
 };

@@ -14,6 +14,7 @@ import { Checkout } from "./components/screens/Checkout";
 import { SubscriptionPlans } from "./components/screens/SubscriptionPlans";
 import { OrderTracking } from "./components/screens/OrderTracking";
 import { Profile } from "./components/screens/Profile";
+import { Wallet } from "./components/screens/Wallet";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,7 +37,7 @@ const App = () => (
             <Route path="subscription" element={<SubscriptionPlans />} />
             <Route path="orders" element={<OrderTracking />} />
             <Route path="profile" element={<Profile />} />
-            <Route path="wallet" element={<div className="p-4">Wallet coming soon...</div>} />
+            <Route path="wallet" element={<Wallet />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

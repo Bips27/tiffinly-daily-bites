@@ -21,8 +21,10 @@ const MobileLayout = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <TopHeader />
-      <main className="flex-1 overflow-auto pb-20">
-        <Outlet />
+      <main className="flex-1 overflow-auto">
+        <div className="pb-24"> {/* Add padding bottom to prevent content being covered */}
+          <Outlet />
+        </div>
       </main>
       <BottomNavigation />
     </div>

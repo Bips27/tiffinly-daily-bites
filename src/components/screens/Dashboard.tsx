@@ -1,63 +1,73 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Edit3, CreditCard, Wallet, ChevronRight, Bell } from 'lucide-react';
+import { Clock, Edit3, CreditCard, Wallet, ChevronRight, Bell, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
+import { useMealData } from '@/hooks/useMealData';
+import { useWallet } from '@/hooks/useWallet';
+import { DashboardSkeleton, LoadingSpinner } from '@/components/ui/loading';
+import { useToast } from '@/hooks/use-toast';
 import heroTiffin from '@/assets/hero-tiffin.jpg';
-
-const todaysMeals = [
-  {
-    type: 'Breakfast',
-    time: '8:00 AM',
-    status: 'delivered',
-    items: ['Poha', 'Masala Tea', 'Fresh Fruits'],
-    calories: 320,
-    image: '🥣'
-  },
-  {
-    type: 'Lunch',
-    time: '1:00 PM',
-    status: 'preparing',
-    items: ['Dal Rice', 'Mixed Vegetables', 'Roti', 'Pickle'],
-    calories: 450,
-    image: '🍛'
-  },
-  {
-    type: 'Dinner',
-    time: '7:30 PM',
-    status: 'scheduled',
-    items: ['Paneer Curry', 'Jeera Rice', 'Chapati', 'Salad'],
-    calories: 420,
-    image: '🍽️'
-  }
-];
 
 export const Dashboard = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { meals, loading, getNextMeal, getMealCountdown, canCustomizeMeal, refreshMeals } = useMealData();
+  const { balance } = useWallet();
+  const [refreshing, setRefreshing] = useState(false);
   const [nextMealCountdown, setNextMealCountdown] = useState('');
 
   useEffect(() => {
     const updateCountdown = () => {
-      const now = new Date();
-      const nextMeal = new Date();
-      nextMeal.setHours(13, 0, 0, 0); // 1:00 PM
-
-      if (now > nextMeal) {
-        nextMeal.setDate(nextMeal.getDate() + 1);
-        nextMeal.setHours(8, 0, 0, 0); // Next day breakfast
+      const nextMeal = getNextMeal();
+      if (nextMeal) {
+        setNextMealCountdown(getMealCountdown(nextMeal.deliveryTime));
       }
-
-      const diff = nextMeal.getTime() - now.getTime();
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-      setNextMealCountdown(`${hours}h ${minutes}m`);
     };
 
     updateCountdown();
     const interval = setInterval(updateCountdown, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [meals]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refreshMeals();
+      toast({
+        title: "Refreshed",
+        description: "Meal data updated successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to refresh data",
+        variant: "destructive",
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleCustomizeMeal = () => {
+    const nextMeal = getNextMeal();
+    if (!nextMeal) return;
+
+    if (!canCustomizeMeal(nextMeal.deliveryTime)) {
+      toast({
+        title: "Customization Closed",
+        description: "Changes are allowed up to 2 hours before delivery",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    navigate('/customize', { state: { meal: nextMeal } });
+  };
+
+  if (loading) {
+    return <DashboardSkeleton />;
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -103,15 +113,30 @@ export const Dashboard = () => {
                 <p className="font-bold text-lg">{nextMealCountdown}</p>
               </div>
             </div>
-            <Button 
-              variant="secondary" 
-              size="sm"
-              onClick={() => navigate('/customize')}
-              className="bg-white/20 hover:bg-white/30 text-white border-white/20"
-            >
-              <Edit3 className="w-4 h-4 mr-2" />
-              Customize
-            </Button>
+            <div className="flex space-x-2">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="bg-white/10 hover:bg-white/20 text-white w-8 h-8"
+              >
+                {refreshing ? (
+                  <LoadingSpinner size="sm" />
+                ) : (
+                  <RefreshCw className="w-4 h-4" />
+                )}
+              </Button>
+              <Button 
+                variant="secondary" 
+                size="sm"
+                onClick={handleCustomizeMeal}
+                className="bg-white/20 hover:bg-white/30 text-white border-white/20"
+              >
+                <Edit3 className="w-4 h-4 mr-2" />
+                Customize
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -121,21 +146,25 @@ export const Dashboard = () => {
         <section>
           <h3 className="text-xl font-bold mb-4">Today's Meals</h3>
           <div className="space-y-3">
-            {todaysMeals.map((meal, index) => (
-              <Card key={index} className="p-4 shadow-card hover:shadow-elevated transition-all duration-200">
+            {meals.map((meal) => (
+              <Card 
+                key={meal.id} 
+                className="p-4 shadow-card hover:shadow-elevated transition-all duration-200 cursor-pointer active:scale-[0.98]"
+                onClick={() => navigate('/tracking', { state: { meal } })}
+              >
                 <div className="flex items-center space-x-4">
                   <div className="text-3xl">{meal.image}</div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-foreground">{meal.type}</h4>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(meal.status)}`}>
+                      <h4 className="font-semibold text-foreground truncate">{meal.name}</h4>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusColor(meal.status)}`}>
                         {getStatusText(meal.status)}
                       </span>
                     </div>
                     <p className="text-sm text-muted-foreground mb-1">{meal.time} • {meal.calories} calories</p>
-                    <p className="text-sm text-muted-foreground">{meal.items.join(', ')}</p>
+                    <p className="text-sm text-muted-foreground truncate">{meal.items.join(', ')}</p>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                  <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                 </div>
               </Card>
             ))}
@@ -160,7 +189,7 @@ export const Dashboard = () => {
             </Card>
             
             <Card 
-              className="p-4 shadow-card hover:shadow-elevated transition-all duration-200 cursor-pointer"
+              className="p-4 shadow-card hover:shadow-elevated transition-all duration-200 cursor-pointer active:scale-[0.98]"
               onClick={() => navigate('/wallet')}
             >
               <div className="text-center">
@@ -168,7 +197,7 @@ export const Dashboard = () => {
                   <Wallet className="w-6 h-6 text-accent" />
                 </div>
                 <h4 className="font-semibold mb-1">Wallet</h4>
-                <p className="text-sm text-muted-foreground">₹1,250 balance</p>
+                <p className="text-sm text-muted-foreground">₹{balance.toLocaleString()} balance</p>
               </div>
             </Card>
           </div>
