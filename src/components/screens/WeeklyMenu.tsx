@@ -61,23 +61,23 @@ export const WeeklyMenu = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20">
       {/* Sticky Header with Date Selector */}
       <div className="sticky top-16 bg-background/95 backdrop-blur-lg border-b border-border z-40">
         {/* Month Navigation */}
-        <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center justify-between px-4 py-4">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigateWeek('prev')}
-            className="h-8 w-8"
+            className="h-10 w-10 rounded-xl touch-manipulation"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-5 h-5" />
           </Button>
           
           <div className="text-center">
             <h2 className="text-lg font-bold">{format(weekStart, 'MMMM yyyy')}</h2>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {format(weekStart, 'MMM d')} - {format(addDays(weekStart, 6), 'MMM d')}
             </p>
           </div>
@@ -86,15 +86,15 @@ export const WeeklyMenu = () => {
             variant="ghost"
             size="icon"
             onClick={() => navigateWeek('next')}
-            className="h-8 w-8"
+            className="h-10 w-10 rounded-xl touch-manipulation"
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-5 h-5" />
           </Button>
         </div>
 
         {/* Horizontal Date Selector */}
         <div 
-          className="flex px-4 pb-4 gap-2 overflow-x-auto scrollbar-hide scroll-smooth"
+          className="flex px-4 pb-4 gap-3 overflow-x-auto scrollbar-hide scroll-smooth"
         >
           {weekDates.map((date, index) => {
             const isSelected = isSameDay(date, selectedDate);
@@ -107,22 +107,22 @@ export const WeeklyMenu = () => {
                   setSelectedDate(date);
                   if (navigator.vibrate) navigator.vibrate(5);
                 }}
-                className={`min-w-[60px] h-16 rounded-2xl flex flex-col items-center justify-center transition-all duration-200 transform active:scale-95 ${
+                className={`min-w-[64px] h-18 rounded-2xl flex flex-col items-center justify-center transition-all duration-200 transform active:scale-95 touch-manipulation ${
                   isSelected
-                    ? 'bg-primary text-primary-foreground shadow-lg scale-105'
+                    ? 'bg-primary text-primary-foreground shadow-elevated scale-105'
                     : isToday
                     ? 'bg-primary/10 text-primary border border-primary/20'
-                    : 'bg-card hover:bg-muted hover:scale-105'
+                    : 'bg-card hover:bg-muted hover:scale-105 shadow-sm'
                 }`}
               >
-                <span className="text-xs font-medium">
+                <span className="text-xs font-medium mb-1">
                   {format(date, 'EEE')}
                 </span>
                 <span className="text-lg font-bold">
                   {format(date, 'd')}
                 </span>
                 {isToday && (
-                  <div className="w-1 h-1 bg-current rounded-full mt-1" />
+                  <div className="w-1.5 h-1.5 bg-current rounded-full mt-1" />
                 )}
               </button>
             );
@@ -131,47 +131,47 @@ export const WeeklyMenu = () => {
       </div>
 
       {/* Meal Cards */}
-      <div className="px-4 py-6 space-y-4">
-        <div className="flex items-center justify-between mb-4">
+      <div className="px-4 py-6 space-y-6">
+        <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-bold">
             {isSameDay(selectedDate, new Date()) ? "Today's Meals" : format(selectedDate, 'EEEE, MMM d')}
           </h3>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="h-9 px-3 rounded-xl touch-manipulation">
             <Calendar className="w-4 h-4 mr-2" />
             Week View
           </Button>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           {mealsForDate.map((meal) => {
             const customizationStatus = getCustomizationStatus(meal);
             
             return (
               <Card 
                 key={meal.id}
-                className="p-4 shadow-card hover:shadow-elevated transition-all duration-200 transform active:scale-[0.98] cursor-pointer"
+                className="p-5 shadow-card hover:shadow-elevated transition-all duration-200 transform active:scale-[0.98] cursor-pointer touch-manipulation"
                 onClick={() => handleMealTap(meal)}
               >
-                <div className="flex items-center space-x-4">
+                <div className="flex items-start space-x-4">
                   {/* Meal Image */}
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-subtle flex items-center justify-center text-3xl shadow-sm">
+                  <div className="w-18 h-18 rounded-2xl bg-gradient-subtle flex items-center justify-center text-4xl shadow-sm flex-shrink-0">
                     {meal.image}
                   </div>
                   
                   {/* Meal Details */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h4 className="font-semibold text-lg text-foreground mb-1">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-lg text-foreground mb-2 leading-tight">
                           {meal.name}
                         </h4>
-                        <div className="flex items-center space-x-3 text-sm text-muted-foreground">
+                        <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                           <div className="flex items-center space-x-1">
-                            <Clock className="w-3 h-3" />
+                            <Clock className="w-4 h-4" />
                             <span>{meal.time}</span>
                           </div>
                           <div className="flex items-center space-x-1">
-                            <Flame className="w-3 h-3" />
+                            <Flame className="w-4 h-4" />
                             <span>{meal.calories} cal</span>
                           </div>
                         </div>
@@ -180,14 +180,14 @@ export const WeeklyMenu = () => {
                       {/* Status Badge */}
                       <Badge 
                         variant="outline"
-                        className={`text-xs px-2 py-1 ${getMealStatusColor(meal.status)}`}
+                        className={`text-xs px-3 py-1.5 ml-3 rounded-xl ${getMealStatusColor(meal.status)}`}
                       >
                         {getMealStatusText(meal.status)}
                       </Badge>
                     </div>
 
                     {/* Items Preview */}
-                    <p className="text-sm text-muted-foreground mb-3 line-clamp-1">
+                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                       {meal.items.slice(0, 2).join(', ')}
                       {meal.items.length > 2 && ` +${meal.items.length - 2} more`}
                     </p>
@@ -196,7 +196,7 @@ export const WeeklyMenu = () => {
                     <div className="flex items-center justify-between">
                       <Badge 
                         variant="outline"
-                        className={`text-xs px-2 py-1 ${
+                        className={`text-xs px-3 py-1.5 rounded-xl font-medium ${
                           customizationStatus.status === 'open' 
                             ? 'bg-success/10 text-success border-success/20' :
                           customizationStatus.status === 'customized' 
@@ -220,19 +220,19 @@ export const WeeklyMenu = () => {
                             if (navigator.vibrate) navigator.vibrate(10);
                           }
                         }}
-                        className="h-8 px-3 text-xs disabled:opacity-50"
+                        className="h-9 px-4 text-xs disabled:opacity-50 rounded-xl touch-manipulation"
                       >
-                        <Edit3 className="w-3 h-3 mr-1" />
+                        <Edit3 className="w-4 h-4 mr-2" />
                         Customize
                       </Button>
                     </div>
 
                     {/* Customization Fee Notice */}
                     {meal.isCustomized && meal.customizationFee && (
-                      <div className="mt-2 p-2 bg-primary/5 border border-primary/10 rounded-lg">
-                        <div className="flex items-center justify-between text-xs">
+                      <div className="mt-3 p-3 bg-primary/5 border border-primary/10 rounded-xl">
+                        <div className="flex items-center justify-between text-sm">
                           <span className="text-muted-foreground">Customization Fee</span>
-                          <span className="font-medium text-primary">₹{meal.customizationFee}</span>
+                          <span className="font-semibold text-primary">₹{meal.customizationFee}</span>
                         </div>
                       </div>
                     )}

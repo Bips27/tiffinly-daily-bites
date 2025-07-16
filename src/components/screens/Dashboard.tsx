@@ -122,9 +122,9 @@ export const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20">
       {/* Hero section */}
-      <div className="relative overflow-hidden bg-gradient-primary rounded-b-3xl mx-4 mb-6">
+      <div className="relative overflow-hidden bg-gradient-primary rounded-b-3xl mx-4 mb-6 mt-2">
         <div className="absolute inset-0 opacity-20">
           <img 
             src={heroTiffin} 
@@ -134,31 +134,31 @@ export const Dashboard = () => {
         </div>
         <div className="relative p-6 text-primary-foreground">
           <h2 className="text-2xl font-bold mb-2">Today's Menu</h2>
-          <p className="text-primary-foreground/90 mb-4">Fresh meals prepared with love</p>
+          <p className="text-primary-foreground/90 mb-6">Fresh meals prepared with love</p>
           
           {/* Next meal countdown */}
-          <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                <Clock className="w-5 h-5" />
+          <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm rounded-2xl p-4 min-h-[80px]">
+            <div className="flex items-center space-x-4 flex-1">
+              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+                <Clock className="w-6 h-6" />
               </div>
-              <div>
-                <p className="text-sm text-white/80">{isPlanPaused ? 'Plan Paused' : 'Next meal'}</p>
-                <p className="font-bold text-lg">{isPlanPaused ? 'Tap to resume' : nextMealCountdown}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-white/80 mb-1">{isPlanPaused ? 'Plan Paused' : 'Next meal'}</p>
+                <p className="font-bold text-lg leading-tight">{isPlanPaused ? 'Tap to resume' : nextMealCountdown}</p>
               </div>
             </div>
-            <div className="flex space-x-2">
+            <div className="flex space-x-3 flex-shrink-0">
               <Button 
                 variant="ghost" 
                 size="icon"
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="bg-white/10 hover:bg-white/20 text-white w-8 h-8"
+                className="bg-white/10 hover:bg-white/20 text-white w-10 h-10 rounded-xl touch-manipulation"
               >
                 {refreshing ? (
                   <LoadingSpinner size="sm" />
                 ) : (
-                  <RefreshCw className="w-4 h-4" />
+                  <RefreshCw className="w-5 h-5" />
                 )}
               </Button>
               <Button 
@@ -168,16 +168,18 @@ export const Dashboard = () => {
                   const nextMeal = getNextMeal();
                   if (nextMeal) handleMealAction(nextMeal);
                 }}
-                className="bg-white/20 hover:bg-white/30 text-white border-white/20"
+                className="bg-white/20 hover:bg-white/30 text-white border-white/20 h-10 px-4 rounded-xl touch-manipulation"
               >
                 <Edit3 className="w-4 h-4 mr-2" />
-                {(() => {
-                  const nextMeal = getNextMeal();
-                  if (nextMeal?.status === 'out_for_delivery' || nextMeal?.status === 'preparing') {
-                    return 'Track';
-                  }
-                  return 'Customize';
-                })()}
+                <span className="text-sm font-medium">
+                  {(() => {
+                    const nextMeal = getNextMeal();
+                    if (nextMeal?.status === 'out_for_delivery' || nextMeal?.status === 'preparing') {
+                      return 'Track';
+                    }
+                    return 'Customize';
+                  })()}
+                </span>
               </Button>
             </div>
           </div>
@@ -188,36 +190,45 @@ export const Dashboard = () => {
         {/* Today's Meals */}
         <section>
           <h3 className="text-xl font-bold mb-4">Today's Meals</h3>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {meals.map((meal) => {
               const customizationStatus = getCustomizationStatus(meal);
               return (
                 <Card 
                   key={meal.id} 
-                  className="p-4 shadow-card hover:shadow-elevated transition-all duration-200"
+                  className="p-5 shadow-card hover:shadow-elevated transition-all duration-200 active:scale-[0.98] touch-manipulation"
                 >
-                  <div className="flex items-center space-x-4">
-                    <div className="text-3xl">{meal.image}</div>
+                  <div className="flex items-start space-x-4">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-subtle flex items-center justify-center text-3xl flex-shrink-0 shadow-sm">
+                      {meal.image}
+                    </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-semibold text-foreground truncate">{meal.name}</h4>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusColor(meal.status)}`}>
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-lg text-foreground mb-1 leading-tight">{meal.name}</h4>
+                          <p className="text-sm text-muted-foreground mb-2 flex items-center space-x-3">
+                            <span>{meal.time}</span>
+                            <span>•</span>
+                            <span>{meal.calories} calories</span>
+                          </p>
+                        </div>
+                        <span className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap ml-3 ${getStatusColor(meal.status)}`}>
                           {getStatusText(meal.status)}
                         </span>
                       </div>
-                      <p className="text-sm text-muted-foreground mb-2">{meal.time} • {meal.calories} calories</p>
-                      <p className="text-sm text-muted-foreground truncate mb-2">{meal.items.join(', ')}</p>
                       
-                      {/* Customization Status */}
+                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{meal.items.join(', ')}</p>
+                      
+                      {/* Customization Status & Actions */}
                       <div className="flex items-center justify-between">
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          customizationStatus.status === 'open' ? 'bg-success/10 text-success' :
-                          customizationStatus.status === 'customized' ? 'bg-primary/10 text-primary' :
-                          'bg-destructive/10 text-destructive'
+                        <span className={`text-xs px-3 py-1.5 rounded-xl font-medium ${
+                          customizationStatus.status === 'open' ? 'bg-success/10 text-success border border-success/20' :
+                          customizationStatus.status === 'customized' ? 'bg-primary/10 text-primary border border-primary/20' :
+                          'bg-destructive/10 text-destructive border border-destructive/20'
                         }`}>
                           {customizationStatus.status === 'open' && '✅ Customizable'}
                           {customizationStatus.status === 'customized' && '🎯 Customized'}
-                          {customizationStatus.status === 'closed' && '❌ Customization Closed'}
+                          {customizationStatus.status === 'closed' && '❌ Closed'}
                         </span>
                         
                         <div className="flex space-x-2">
@@ -226,7 +237,7 @@ export const Dashboard = () => {
                               variant="default" 
                               size="sm"
                               onClick={() => navigate('/tracking', { state: { meal } })}
-                              className="text-xs bg-primary text-primary-foreground"
+                              className="text-xs h-8 px-3 rounded-xl touch-manipulation"
                             >
                               Track Live
                             </Button>
@@ -235,7 +246,7 @@ export const Dashboard = () => {
                               variant="ghost" 
                               size="sm"
                               onClick={() => navigate('/tracking', { state: { meal } })}
-                              className="text-xs"
+                              className="text-xs h-8 px-3 rounded-xl touch-manipulation"
                             >
                               Track
                             </Button>
@@ -245,7 +256,7 @@ export const Dashboard = () => {
                               variant="outline" 
                               size="sm"
                               onClick={() => handleCustomizeMeal(meal)}
-                              className="text-xs"
+                              className="text-xs h-8 px-3 rounded-xl touch-manipulation"
                             >
                               Customize
                             </Button>
@@ -263,62 +274,62 @@ export const Dashboard = () => {
         {/* Quick Actions */}
         <section>
           <h3 className="text-xl font-bold mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-2 gap-4 mb-6">
             <Card 
-              className="p-4 shadow-card hover:shadow-elevated transition-all duration-200 cursor-pointer active:scale-[0.98]"
+              className="p-5 shadow-card hover:shadow-elevated transition-all duration-200 cursor-pointer active:scale-[0.98] touch-manipulation"
               onClick={handleViewWeeklyMenu}
             >
               <div className="text-center">
-                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-                  <Calendar className="w-6 h-6 text-primary" />
+                <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Calendar className="w-7 h-7 text-primary" />
                 </div>
-                <h4 className="font-semibold mb-1">Weekly Menu</h4>
-                <p className="text-sm text-muted-foreground">View full menu</p>
+                <h4 className="font-semibold text-base mb-2">Weekly Menu</h4>
+                <p className="text-sm text-muted-foreground leading-tight">View full menu</p>
               </div>
             </Card>
             
             <Card 
-              className="p-4 shadow-card hover:shadow-elevated transition-all duration-200 cursor-pointer active:scale-[0.98]"
+              className="p-5 shadow-card hover:shadow-elevated transition-all duration-200 cursor-pointer active:scale-[0.98] touch-manipulation"
               onClick={handlePausePlan}
             >
               <div className="text-center">
-                <div className={`w-12 h-12 ${isPlanPaused ? 'bg-success/10' : 'bg-warning/10'} rounded-xl flex items-center justify-center mx-auto mb-3`}>
+                <div className={`w-14 h-14 ${isPlanPaused ? 'bg-success/10' : 'bg-warning/10'} rounded-2xl flex items-center justify-center mx-auto mb-4`}>
                   {isPlanPaused ? (
-                    <Play className="w-6 h-6 text-success" />
+                    <Play className="w-7 h-7 text-success" />
                   ) : (
-                    <Pause className="w-6 h-6 text-warning" />
+                    <Pause className="w-7 h-7 text-warning" />
                   )}
                 </div>
-                <h4 className="font-semibold mb-1">{isPlanPaused ? 'Resume' : 'Pause'} Plan</h4>
-                <p className="text-sm text-muted-foreground">{isPlanPaused ? 'Activate meals' : 'Temporarily stop'}</p>
+                <h4 className="font-semibold text-base mb-2">{isPlanPaused ? 'Resume' : 'Pause'} Plan</h4>
+                <p className="text-sm text-muted-foreground leading-tight">{isPlanPaused ? 'Activate meals' : 'Temporarily stop'}</p>
               </div>
             </Card>
           </div>
           
           <div className="grid grid-cols-2 gap-4">
             <Card 
-              className="p-4 shadow-card hover:shadow-elevated transition-all duration-200 cursor-pointer active:scale-[0.98]"
+              className="p-5 shadow-card hover:shadow-elevated transition-all duration-200 cursor-pointer active:scale-[0.98] touch-manipulation"
               onClick={() => navigate('/subscription')}
             >
               <div className="text-center">
-                <div className="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-                  <CreditCard className="w-6 h-6 text-accent" />
+                <div className="w-14 h-14 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <CreditCard className="w-7 h-7 text-accent" />
                 </div>
-                <h4 className="font-semibold mb-1">Subscription</h4>
-                <p className="text-sm text-muted-foreground">Manage your plan</p>
+                <h4 className="font-semibold text-base mb-2">Subscription</h4>
+                <p className="text-sm text-muted-foreground leading-tight">Manage your plan</p>
               </div>
             </Card>
             
             <Card 
-              className="p-4 shadow-card hover:shadow-elevated transition-all duration-200 cursor-pointer active:scale-[0.98]"
+              className="p-5 shadow-card hover:shadow-elevated transition-all duration-200 cursor-pointer active:scale-[0.98] touch-manipulation"
               onClick={() => navigate('/wallet')}
             >
               <div className="text-center">
-                <div className="w-12 h-12 bg-success/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-                  <Wallet className="w-6 h-6 text-success" />
+                <div className="w-14 h-14 bg-success/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Wallet className="w-7 h-7 text-success" />
                 </div>
-                <h4 className="font-semibold mb-1">Wallet</h4>
-                <p className="text-sm text-muted-foreground">₹{balance.toLocaleString()} balance</p>
+                <h4 className="font-semibold text-base mb-2">Wallet</h4>
+                <p className="text-sm text-muted-foreground leading-tight">₹{balance.toLocaleString()} balance</p>
               </div>
             </Card>
           </div>

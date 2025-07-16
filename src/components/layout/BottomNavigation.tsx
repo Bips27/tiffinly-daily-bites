@@ -16,8 +16,8 @@ export const BottomNavigation = () => {
   const navigate = useNavigate();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 backdrop-blur-md bg-card/95">
-      <div className="grid grid-cols-5 h-16">
+    <nav className="fixed bottom-0 left-0 right-0 bg-card/95 border-t border-border z-50 backdrop-blur-lg supports-[backdrop-filter]:bg-card/90">
+      <div className="grid grid-cols-5 h-18 px-2">
         {navItems.map(({ path, label, icon: Icon }) => {
           const isActive = location.pathname === path;
           return (
@@ -25,10 +25,10 @@ export const BottomNavigation = () => {
               key={path}
               onClick={() => navigate(path)}
               className={cn(
-                "flex flex-col items-center justify-center space-y-1 transition-all duration-200",
+                "flex flex-col items-center justify-center space-y-1.5 transition-all duration-200 touch-manipulation rounded-xl mx-1 my-2",
                 isActive 
-                  ? "text-primary" 
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "text-primary bg-primary/10" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               )}
             >
               <Icon 
@@ -38,7 +38,7 @@ export const BottomNavigation = () => {
                 )} 
               />
               <span className={cn(
-                "text-xs font-medium transition-all duration-200",
+                "text-xs font-medium transition-all duration-200 leading-none",
                 isActive && "font-semibold"
               )}>
                 {label}

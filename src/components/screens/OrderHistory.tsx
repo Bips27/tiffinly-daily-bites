@@ -117,43 +117,43 @@ export const OrderHistory = () => {
   };
 
   const OrderCard = ({ order }: { order: Order }) => (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex-1">
-            <div className="flex items-center space-x-2 mb-1">
-              <h3 className="font-semibold">{order.mealName}</h3>
-              <Badge variant="outline" className="text-xs">
+    <Card className="overflow-hidden hover:shadow-elevated transition-all duration-200 active:scale-[0.98] cursor-pointer touch-manipulation">
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center space-x-3 mb-2">
+              <h3 className="font-semibold text-base">{order.mealName}</h3>
+              <Badge variant="outline" className="text-xs px-2 py-1 rounded-xl">
                 {order.mealType}
               </Badge>
             </div>
             <div className="flex items-center space-x-4 text-sm text-muted-foreground">
               <div className="flex items-center space-x-1">
-                <Calendar className="h-3 w-3" />
+                <Calendar className="h-4 w-4" />
                 <span>{format(order.date, 'MMM dd')}</span>
               </div>
               <div className="flex items-center space-x-1">
-                <Clock className="h-3 w-3" />
+                <Clock className="h-4 w-4" />
                 <span>{order.deliveryTime}</span>
               </div>
             </div>
           </div>
-          <div className="text-right">
-            <Badge className={getStatusColor(order.status)}>
+          <div className="text-right ml-3">
+            <Badge className={`${getStatusColor(order.status)} rounded-xl px-3 py-1.5`}>
               {order.status}
             </Badge>
             {order.amount > 0 && (
-              <p className="text-sm font-medium mt-1">+₹{order.amount}</p>
+              <p className="text-sm font-semibold mt-2">+₹{order.amount}</p>
             )}
           </div>
         </div>
 
         {order.customizations && order.customizations.length > 0 && (
-          <div className="mb-3">
-            <p className="text-xs text-muted-foreground mb-1">Customizations:</p>
-            <div className="flex flex-wrap gap-1">
+          <div className="mb-4">
+            <p className="text-xs text-muted-foreground mb-2">Customizations:</p>
+            <div className="flex flex-wrap gap-2">
               {order.customizations.map((custom, index) => (
-                <Badge key={index} variant="secondary" className="text-xs">
+                <Badge key={index} variant="secondary" className="text-xs px-2 py-1 rounded-xl">
                   {custom}
                 </Badge>
               ))}
@@ -164,7 +164,7 @@ export const OrderHistory = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <span className="text-xs text-muted-foreground">Order ID:</span>
-            <span className="text-xs font-mono">{order.id}</span>
+            <span className="text-xs font-mono font-medium">{order.id}</span>
           </div>
           {order.rating && order.status === 'delivered' && (
             <div className="flex items-center space-x-1">
@@ -177,19 +177,19 @@ export const OrderHistory = () => {
   );
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-background pb-20">
       {/* Header */}
       <div className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
         <div className="flex items-center justify-between p-4">
           <Button 
             variant="ghost" 
-            size="sm" 
+            size="icon" 
             onClick={() => navigate(-1)}
-            className="h-10 w-10 rounded-full"
+            className="h-10 w-10 rounded-xl touch-manipulation"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-lg font-semibold">Order History</h1>
+          <h1 className="text-xl font-bold">Order History</h1>
           <div className="w-10" />
         </div>
       </div>

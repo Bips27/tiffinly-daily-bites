@@ -140,19 +140,20 @@ export const MealCustomization = () => {
 
   return (
     <>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background pb-32">
         {/* Header */}
         <div className="sticky top-0 bg-background/95 backdrop-blur-md border-b border-border p-4 z-40">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 flex-1">
               <Button 
                 variant="ghost" 
                 size="icon"
                 onClick={handleCancelChanges}
+                className="h-10 w-10 rounded-xl touch-manipulation"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Button>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <h1 className="text-xl font-bold">Customize Meal</h1>
                 <p className="text-sm text-muted-foreground">
                   {meal.type} • {meal.time}
@@ -164,7 +165,7 @@ export const MealCustomization = () => {
                 variant="ghost" 
                 size="icon"
                 onClick={() => setShowCancelDialog(true)}
-                className="text-muted-foreground"
+                className="text-muted-foreground h-10 w-10 rounded-xl touch-manipulation"
               >
                 <X className="w-5 h-5" />
               </Button>
@@ -172,24 +173,24 @@ export const MealCustomization = () => {
           </div>
         </div>
 
-        <div className="px-4 space-y-6 pb-32">
+        <div className="px-4 space-y-6 pt-4">
         {/* Customization Status */}
-        <Card className={`p-4 ${canCustomize ? 'bg-success/10 border-success' : 'bg-destructive/10 border-destructive'}`}>
-          <div className="flex items-center space-x-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+        <Card className={`p-5 ${canCustomize ? 'bg-success/10 border-success/20' : 'bg-destructive/10 border-destructive/20'} shadow-sm`}>
+          <div className="flex items-start space-x-4">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${
               canCustomize ? 'bg-success/20' : 'bg-destructive/20'
             }`}>
               {canCustomize ? (
-                <Clock className="w-5 h-5 text-success" />
+                <Clock className="w-6 h-6 text-success" />
               ) : (
-                <AlertTriangle className="w-5 h-5 text-destructive" />
+                <AlertTriangle className="w-6 h-6 text-destructive" />
               )}
             </div>
-            <div className="flex-1">
-              <p className={`font-medium ${canCustomize ? 'text-success' : 'text-destructive'}`}>
+            <div className="flex-1 min-w-0">
+              <p className={`font-semibold text-base mb-2 ${canCustomize ? 'text-success' : 'text-destructive'}`}>
                 {canCustomize ? '✅ Customization Available' : '❌ Customization Closed'}
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 {canCustomize 
                   ? `Changes allowed until 2 hours before delivery (${meal.time})` 
                   : timeRemaining}
@@ -200,15 +201,17 @@ export const MealCustomization = () => {
 
           {/* Current Meal */}
           <section>
-            <h2 className="text-lg font-bold mb-3">Current Meal</h2>
-            <Card className="p-4 shadow-card">
-              <div className="flex items-center space-x-4">
-                <div className="text-4xl">{meal.image}</div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg">{meal.name}</h3>
-                  <div className="mt-2 space-y-1">
+            <h2 className="text-lg font-bold mb-4">Current Meal</h2>
+            <Card className="p-5 shadow-card">
+              <div className="flex items-start space-x-4">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-subtle flex items-center justify-center text-4xl flex-shrink-0">
+                  {meal.image}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-lg mb-3">{meal.name}</h3>
+                  <div className="space-y-2">
                     {meal.items.map((item, index) => (
-                      <div key={index} className="flex items-center space-x-2">
+                      <div key={index} className="flex items-center space-x-3">
                         <div className="w-2 h-2 bg-success rounded-full flex-shrink-0" />
                         <span className="text-sm text-muted-foreground">{item}</span>
                       </div>
@@ -304,22 +307,22 @@ export const MealCustomization = () => {
         {/* Fixed Bottom Checkout */}
         {(getTotalExtra() > 0 || selectedAlternative) && (
           <div className="fixed bottom-20 left-0 right-0 p-4 bg-background/95 backdrop-blur-md border-t border-border z-50">
-            <Card className="p-4 shadow-elevated">
-              <div className="flex items-center justify-between mb-3">
-                <span className="font-medium">Extra charges:</span>
-                <span className="text-lg font-bold text-primary">₹{getTotalExtra()}</span>
+            <Card className="p-5 shadow-elevated">
+              <div className="flex items-center justify-between mb-4">
+                <span className="font-semibold text-base">Extra charges:</span>
+                <span className="text-xl font-bold text-primary">₹{getTotalExtra()}</span>
               </div>
               <Button 
-                className="w-full touch-manipulation" 
+                className="w-full touch-manipulation h-12 text-base font-semibold rounded-xl" 
                 onClick={handleCheckout}
                 disabled={!canCustomize}
                 size="lg"
               >
-                <ShoppingCart className="w-4 h-4 mr-2" />
+                <ShoppingCart className="w-5 h-5 mr-3" />
                 Add to Cart
               </Button>
               {!canCustomize && (
-                <p className="text-xs text-destructive mt-2 text-center">
+                <p className="text-sm text-destructive mt-3 text-center">
                   Customization window has closed
                 </p>
               )}

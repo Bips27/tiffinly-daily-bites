@@ -27,13 +27,13 @@ export const TopHeader = () => {
   const showLocationAndNotifications = location.pathname === '/';
 
   return (
-    <header className="bg-card border-b border-border sticky top-0 z-50 backdrop-blur-md bg-card/95">
-      <div className="px-4 py-3">
+    <header className="bg-card/95 border-b border-border sticky top-0 z-50 backdrop-blur-lg supports-[backdrop-filter]:bg-card/90">
+      <div className="px-4 py-4">
         <div className="flex items-center justify-between">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <h1 className="text-xl font-bold text-foreground">{getPageTitle()}</h1>
             {showLocationAndNotifications && (
-              <div className="flex items-center gap-1 mt-1">
+              <div className="flex items-center gap-2 mt-1">
                 <MapPin className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">Home • Mumbai</span>
               </div>
@@ -44,18 +44,19 @@ export const TopHeader = () => {
             {showLocationAndNotifications && (
               <Button
                 variant="ghost"
-                size="icon-sm"
+                size="icon"
                 onClick={() => navigate('/notifications')}
-                className="relative"
+                className="relative h-10 w-10 rounded-xl touch-manipulation"
               >
                 <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-destructive rounded-full"></span>
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-destructive rounded-full border-2 border-background"></span>
               </Button>
             )}
             <Button
               variant="ghost"
-              size="icon-sm"
+              size="icon"
               onClick={() => navigate('/profile')}
+              className="h-10 w-10 rounded-xl touch-manipulation"
             >
               <User className="w-5 h-5" />
             </Button>
