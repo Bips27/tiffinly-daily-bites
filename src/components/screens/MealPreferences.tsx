@@ -1,43 +1,27 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Check, Coffee, Sun, Moon, ChefHat } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Check, Coffee, Sun, Moon, ChefHat, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
-const mealOptions = {
-  breakfast: [
-    { id: 'poha', name: 'Poha', type: 'vegetarian' },
-    { id: 'upma', name: 'Upma', type: 'vegetarian' },
-    { id: 'idli-sambhar', name: 'Idli Sambhar', type: 'vegetarian' },
-    { id: 'dosa', name: 'Masala Dosa', type: 'vegetarian' },
-    { id: 'paratha', name: 'Stuffed Paratha', type: 'vegetarian' },
-    { id: 'omelette', name: 'Masala Omelette', type: 'non-vegetarian' },
-    { id: 'sandwich', name: 'Grilled Sandwich', type: 'vegetarian' },
-    { id: 'pancakes', name: 'Wheat Pancakes', type: 'vegetarian' }
-  ],
-  lunch: [
-    { id: 'dal-rice', name: 'Dal Rice', type: 'vegetarian' },
-    { id: 'rajma-chawal', name: 'Rajma Chawal', type: 'vegetarian' },
-    { id: 'chicken-curry', name: 'Chicken Curry', type: 'non-vegetarian' },
-    { id: 'paneer-butter', name: 'Paneer Butter Masala', type: 'vegetarian' },
-    { id: 'chole-bhature', name: 'Chole Bhature', type: 'vegetarian' },
-    { id: 'fish-curry', name: 'Fish Curry', type: 'non-vegetarian' },
-    { id: 'veg-thali', name: 'Veg Thali', type: 'vegetarian' },
-    { id: 'biryani', name: 'Chicken Biryani', type: 'non-vegetarian' }
-  ],
-  dinner: [
-    { id: 'roti-sabzi', name: 'Roti Sabzi', type: 'vegetarian' },
-    { id: 'khichdi', name: 'Khichdi', type: 'vegetarian' },
-    { id: 'mutton-curry', name: 'Mutton Curry', type: 'non-vegetarian' },
-    { id: 'palak-paneer', name: 'Palak Paneer', type: 'vegetarian' },
-    { id: 'egg-curry', name: 'Egg Curry', type: 'non-vegetarian' },
-    { id: 'dal-tadka', name: 'Dal Tadka', type: 'vegetarian' },
-    { id: 'veg-pulao', name: 'Veg Pulao', type: 'vegetarian' },
-    { id: 'grilled-chicken', name: 'Grilled Chicken', type: 'non-vegetarian' }
-  ]
-};
+interface Dish {
+  id: string;
+  name: string;
+  category_id: string;
+  description?: string;
+  is_vegetarian: boolean;
+  is_vegan: boolean;
+}
+
+interface MealCategory {
+  id: string;
+  name: string;
+  display_order: number;
+}
 
 interface MealPreferencesProps {}
 
@@ -45,24 +29,80 @@ export const MealPreferences: React.FC<MealPreferencesProps> = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { user, updateProfile } = useAuth();
   
   const selectedPlan = location.state?.plan;
   
+  const [categories, setCategories] = useState<MealCategory[]>([]);
+  const [dishes, setDishes] = useState<{ [key: string]: Dish[] }>({});
   const [preferences, setPreferences] = useState({
     breakfast: [] as string[],
     lunch: [] as string[],
     dinner: [] as string[]
   });
-  
+  const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleMealToggle = (mealType: keyof typeof preferences, mealId: string) => {
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    loadMealData();
+  }, [user, navigate]);
+
+  const loadMealData = async () => {
+    try {
+      // Load meal categories
+      const { data: categoriesData, error: categoriesError } = await supabase
+        .from('meal_categories')
+        .select('*')
+        .order('display_order');
+
+      if (categoriesError) throw categoriesError;
+
+      // Load dishes grouped by category
+      const { data: dishesData, error: dishesError } = await supabase
+        .from('dishes')
+        .select(`
+          *,
+          meal_categories!inner(name)
+        `);
+
+      if (dishesError) throw dishesError;
+
+      setCategories(categoriesData || []);
+      
+      // Group dishes by category name
+      const dishesByCategory: { [key: string]: Dish[] } = {};
+      dishesData?.forEach(dish => {
+        const categoryName = (dish as any).meal_categories.name;
+        if (!dishesByCategory[categoryName]) {
+          dishesByCategory[categoryName] = [];
+        }
+        dishesByCategory[categoryName].push(dish);
+      });
+
+      setDishes(dishesByCategory);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error loading meal data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load meal options. Please try again.",
+        variant: "destructive"
+      });
+      setLoading(false);
+    }
+  };
+
+  const handleMealToggle = (mealType: keyof typeof preferences, dishId: string) => {
     setPreferences(prev => {
       const currentSelection = prev[mealType];
       let newSelection;
       
-      if (currentSelection.includes(mealId)) {
-        newSelection = currentSelection.filter(id => id !== mealId);
+      if (currentSelection.includes(dishId)) {
+        newSelection = currentSelection.filter(id => id !== dishId);
       } else {
         if (currentSelection.length >= 5) {
           toast({
@@ -72,7 +112,7 @@ export const MealPreferences: React.FC<MealPreferencesProps> = () => {
           });
           return prev;
         }
-        newSelection = [...currentSelection, mealId];
+        newSelection = [...currentSelection, dishId];
       }
       
       return {
@@ -96,27 +136,70 @@ export const MealPreferences: React.FC<MealPreferencesProps> = () => {
       return;
     }
 
+    if (!user) return;
+
     setIsProcessing(true);
     
-    // Simulate storing preferences
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Store preferences in localStorage (in real app, would be sent to backend)
-    const userPreferences = {
-      plan: selectedPlan,
-      mealPreferences: preferences,
-      completedAt: new Date().toISOString()
-    };
-    localStorage.setItem('userPreferences', JSON.stringify(userPreferences));
-    
-    setIsProcessing(false);
-    
-    toast({
-      title: "Preferences Saved!",
-      description: "Your meal preferences have been saved successfully",
-    });
-    
-    navigate('/dashboard');
+    try {
+      // Save meal preferences to database
+      const preferenceInserts = [];
+      
+      for (const [mealType, dishIds] of Object.entries(preferences)) {
+        for (let i = 0; i < dishIds.length; i++) {
+          preferenceInserts.push({
+            user_id: user.id,
+            dish_id: dishIds[i],
+            meal_type: mealType,
+            preference_order: i + 1
+          });
+        }
+      }
+
+      // Clear existing preferences first
+      await supabase
+        .from('user_meal_preferences')
+        .delete()
+        .eq('user_id', user.id);
+
+      // Insert new preferences
+      const { error: preferencesError } = await supabase
+        .from('user_meal_preferences')
+        .insert(preferenceInserts);
+
+      if (preferencesError) throw preferencesError;
+
+      // Create user subscription if plan is selected
+      if (selectedPlan) {
+        const { error: subscriptionError } = await supabase
+          .from('user_subscriptions')
+          .insert({
+            user_id: user.id,
+            plan_id: selectedPlan.id,
+            status: 'active'
+          });
+
+        if (subscriptionError) throw subscriptionError;
+      }
+
+      // Mark onboarding as completed
+      await updateProfile({ onboarding_completed: true });
+      
+      toast({
+        title: "Preferences Saved!",
+        description: "Your meal preferences have been saved successfully",
+      });
+      
+      navigate('/');
+    } catch (error) {
+      console.error('Error saving preferences:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save preferences. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const getMealIcon = (mealType: string) => {
@@ -144,6 +227,17 @@ export const MealPreferences: React.FC<MealPreferencesProps> = () => {
             Select Plan
           </Button>
         </Card>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading meal options...</p>
+        </div>
       </div>
     );
   }
@@ -191,20 +285,22 @@ export const MealPreferences: React.FC<MealPreferencesProps> = () => {
             <div>
               <p className="font-semibold">{selectedPlan.name}</p>
               <p className="text-sm text-muted-foreground">
-                ₹{selectedPlan.price} • {selectedPlan.meals} meals
+                ₹{selectedPlan.price} • {selectedPlan.type}
               </p>
             </div>
           </div>
         </Card>
 
         {/* Meal Types */}
-        {Object.entries(mealOptions).map(([mealType, options]) => {
+        {categories.map(category => {
+          const mealType = category.name;
+          const options = dishes[mealType] || [];
           const Icon = getMealIcon(mealType);
-          const selectedCount = preferences[mealType as keyof typeof preferences].length;
+          const selectedCount = preferences[mealType as keyof typeof preferences]?.length || 0;
           const isComplete = selectedCount >= 3;
           
           return (
-            <section key={mealType} className="space-y-4">
+            <section key={category.id} className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
@@ -231,24 +327,24 @@ export const MealPreferences: React.FC<MealPreferencesProps> = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                {options.map(option => {
-                  const isSelected = preferences[mealType as keyof typeof preferences].includes(option.id);
+                {options.map(dish => {
+                  const isSelected = preferences[mealType as keyof typeof preferences]?.includes(dish.id) || false;
                   
                   return (
                     <Card
-                      key={option.id}
+                      key={dish.id}
                       className={`p-3 cursor-pointer transition-all duration-200 ${
                         isSelected 
                           ? 'ring-2 ring-primary bg-primary/5 border-primary' 
                           : 'hover:bg-muted/50'
                       }`}
-                      onClick={() => handleMealToggle(mealType as keyof typeof preferences, option.id)}
+                      onClick={() => handleMealToggle(mealType as keyof typeof preferences, dish.id)}
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium text-sm">{option.name}</p>
-                          <p className="text-xs text-muted-foreground capitalize">
-                            {option.type}
+                          <p className="font-medium text-sm">{dish.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {dish.is_vegan ? 'Vegan' : dish.is_vegetarian ? 'Vegetarian' : 'Non-Vegetarian'}
                           </p>
                         </div>
                         
@@ -289,7 +385,7 @@ export const MealPreferences: React.FC<MealPreferencesProps> = () => {
             >
               {isProcessing ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin mr-2" />
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
                   Saving Preferences...
                 </>
               ) : (

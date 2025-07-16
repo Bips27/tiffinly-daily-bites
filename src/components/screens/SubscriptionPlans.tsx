@@ -1,78 +1,22 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Check, Crown, Zap, Star, Calendar } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Check, Crown, Zap, Star, Calendar, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
-const plans = [
-  {
-    id: 'weekly',
-    name: 'Weekly Plan',
-    duration: '7 days',
-    price: 899,
-    originalPrice: 1050,
-    meals: 21,
-    mealsPerDay: '3 meals/day',
-    icon: Calendar,
-    color: 'text-accent',
-    bgColor: 'bg-accent/10',
-    features: [
-      'Breakfast, Lunch & Dinner',
-      'Fresh ingredients daily',
-      'Cancel anytime',
-      'Free delivery'
-    ],
-    popular: false
-  },
-  {
-    id: 'monthly',
-    name: 'Monthly Plan',
-    duration: '30 days',
-    price: 2999,
-    originalPrice: 4200,
-    meals: 90,
-    mealsPerDay: '3 meals/day',
-    icon: Crown,
-    color: 'text-primary',
-    bgColor: 'bg-primary/10',
-    features: [
-      'Breakfast, Lunch & Dinner',
-      'Premium meal options',
-      'Priority customer support',
-      'Free delivery',
-      'Customization included',
-      'Nutrition tracking'
-    ],
-    popular: true,
-    savings: '29% OFF'
-  },
-  {
-    id: 'premium',
-    name: 'Premium Monthly',
-    duration: '30 days',
-    price: 4999,
-    originalPrice: 6300,
-    meals: 90,
-    mealsPerDay: '3 meals/day',
-    icon: Star,
-    color: 'text-warning',
-    bgColor: 'bg-warning/10',
-    features: [
-      'Gourmet meal options',
-      'Chef specials included',
-      'Unlimited customizations',
-      'Premium ingredients',
-      'Dedicated support',
-      'Free delivery',
-      'Nutrition consultation'
-    ],
-    popular: false,
-    savings: '21% OFF'
-  }
-];
+interface SubscriptionPlan {
+  id: string;
+  name: string;
+  type: string;
+  price: number;
+  description: string;
+  features: string[];
+}
 
 interface SubscriptionPlansProps {
-  onPlanSelect?: (planId: string) => Promise<void>;
+  onPlanSelect?: (plan: SubscriptionPlan) => Promise<void>;
   isOnboarding?: boolean;
 }
 
@@ -81,28 +25,101 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({
   isOnboarding = false 
 }) => {
   const navigate = useNavigate();
-  const [selectedPlan, setSelectedPlan] = useState('monthly');
+  const { toast } = useToast();
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [selectedPlan, setSelectedPlan] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const handleSubscribe = async (planId: string) => {
-    setIsProcessing(true);
-    
-    if (onPlanSelect) {
-      await onPlanSelect(planId);
-    } else {
-      // Default behavior for non-onboarding flow
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      navigate('/subscription-success', { 
-        state: { 
-          plan: plans.find(p => p.id === planId)
-        } 
+  useEffect(() => {
+    loadPlans();
+  }, []);
+
+  const loadPlans = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .order('price');
+
+      if (error) throw error;
+
+      setPlans(data || []);
+      // Set default selection to the second plan (usually the most popular)
+      if (data && data.length > 1) {
+        setSelectedPlan(data[1].id);
+      }
+      setLoading(false);
+    } catch (error) {
+      console.error('Error loading plans:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load subscription plans. Please try again.",
+        variant: "destructive"
       });
+      setLoading(false);
     }
-    
-    setIsProcessing(false);
   };
 
+  const handleSubscribe = async (planId: string) => {
+    const plan = plans.find(p => p.id === planId);
+    if (!plan) return;
+
+    setIsProcessing(true);
+    
+    try {
+      if (onPlanSelect) {
+        await onPlanSelect(plan);
+      } else {
+        // Default behavior for non-onboarding flow
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        navigate('/subscription-success', { 
+          state: { plan }
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to process subscription. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const getPlanIcon = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'weekly': return Calendar;
+      case 'monthly': return Crown;
+      case 'premium': return Star;
+      default: return Crown;
+    }
+  };
+
+  const getPlanColor = (type: string, index: number) => {
+    const colors = [
+      { color: 'text-accent', bgColor: 'bg-accent/10' },
+      { color: 'text-primary', bgColor: 'bg-primary/10' },
+      { color: 'text-warning', bgColor: 'bg-warning/10' }
+    ];
+    return colors[index % colors.length];
+  };
+
+  const isPopular = (index: number) => index === 1; // Make the second plan popular
+
   const currentPlan = plans.find(p => p.id === selectedPlan);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading subscription plans...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -126,77 +143,70 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({
       <div className="px-4 space-y-6 pb-32">
         {/* Plan Cards */}
         <section className="space-y-4">
-          {plans.map(plan => (
-            <Card 
-              key={plan.id}
-              className={`relative p-6 shadow-card cursor-pointer transition-all duration-200 ${
-                selectedPlan === plan.id ? 'ring-2 ring-primary bg-primary/5' : ''
-              } ${plan.popular ? 'border-primary' : ''}`}
-              onClick={() => setSelectedPlan(plan.id)}
-            >
-              {/* Popular Badge */}
-              {plan.popular && (
-                <div className="absolute -top-3 left-6 bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-medium">
-                  Most Popular
-                </div>
-              )}
-
-              {/* Savings Badge */}
-              {plan.savings && (
-                <div className="absolute -top-3 right-6 bg-success text-success-foreground px-3 py-1 rounded-full text-xs font-medium">
-                  {plan.savings}
-                </div>
-              )}
-
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-12 h-12 ${plan.bgColor} rounded-xl flex items-center justify-center`}>
-                    <plan.icon className={`w-6 h-6 ${plan.color}`} />
+          {plans.map((plan, index) => {
+            const Icon = getPlanIcon(plan.type);
+            const colors = getPlanColor(plan.type, index);
+            const popular = isPopular(index);
+            
+            return (
+              <Card 
+                key={plan.id}
+                className={`relative p-6 shadow-card cursor-pointer transition-all duration-200 ${
+                  selectedPlan === plan.id ? 'ring-2 ring-primary bg-primary/5' : ''
+                } ${popular ? 'border-primary' : ''}`}
+                onClick={() => setSelectedPlan(plan.id)}
+              >
+                {/* Popular Badge */}
+                {popular && (
+                  <div className="absolute -top-3 left-6 bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-medium">
+                    Most Popular
                   </div>
-                  <div>
-                    <h3 className="text-lg font-bold">{plan.name}</h3>
-                    <p className="text-sm text-muted-foreground">{plan.duration}</p>
+                )}
+
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-12 h-12 ${colors.bgColor} rounded-xl flex items-center justify-center`}>
+                      <Icon className={`w-6 h-6 ${colors.color}`} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold">{plan.name}</h3>
+                      <p className="text-sm text-muted-foreground capitalize">{plan.type}</p>
+                    </div>
+                  </div>
+                  
+                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                    selectedPlan === plan.id 
+                      ? 'bg-primary border-primary' 
+                      : 'border-border'
+                  }`}>
+                    {selectedPlan === plan.id && (
+                      <Check className="w-4 h-4 text-white" />
+                    )}
                   </div>
                 </div>
-                
-                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                  selectedPlan === plan.id 
-                    ? 'bg-primary border-primary' 
-                    : 'border-border'
-                }`}>
-                  {selectedPlan === plan.id && (
-                    <Check className="w-4 h-4 text-white" />
-                  )}
-                </div>
-              </div>
 
-              {/* Pricing */}
-              <div className="mb-4">
-                <div className="flex items-baseline space-x-2">
-                  <span className="text-3xl font-bold text-primary">₹{plan.price}</span>
-                  <span className="text-lg text-muted-foreground line-through">
-                    ₹{plan.originalPrice}
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {plan.meals} meals • {plan.mealsPerDay}
-                </p>
-                <p className="text-sm font-medium text-success">
-                  ₹{Math.round(plan.price / plan.meals)} per meal
-                </p>
-              </div>
-
-              {/* Features */}
-              <div className="space-y-2">
-                {plan.features.map((feature, index) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <Check className="w-4 h-4 text-success" />
-                    <span className="text-sm">{feature}</span>
+                {/* Pricing */}
+                <div className="mb-4">
+                  <div className="flex items-baseline space-x-2">
+                    <span className="text-3xl font-bold text-primary">₹{plan.price}</span>
                   </div>
-                ))}
-              </div>
-            </Card>
-          ))}
+                  <p className="text-sm text-muted-foreground">
+                    {plan.description}
+                  </p>
+                </div>
+
+                {/* Features */}
+                <div className="space-y-2">
+                  {plan.features.map((feature, featureIndex) => (
+                    <div key={featureIndex} className="flex items-center space-x-2">
+                      <Check className="w-4 h-4 text-success" />
+                      <span className="text-sm">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            );
+          })}
         </section>
 
         {/* Plan Comparison */}
@@ -220,19 +230,6 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({
             </div>
           </div>
         </Card>
-
-        {/* Current Subscription */}
-        <Card className="p-4 border-accent bg-accent/5">
-          <div className="flex items-center space-x-3">
-            <Zap className="w-5 h-5 text-accent" />
-            <div>
-              <p className="font-medium text-accent">Current Plan</p>
-              <p className="text-sm text-muted-foreground">
-                Premium Monthly - Active until Dec 31, 2024
-              </p>
-            </div>
-          </div>
-        </Card>
       </div>
 
       {/* Fixed Bottom Subscribe */}
@@ -242,8 +239,8 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({
             <div className="flex items-center justify-between mb-3">
               <div>
                 <p className="font-medium">{currentPlan.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  ₹{Math.round(currentPlan.price / currentPlan.meals)} per meal
+                <p className="text-sm text-muted-foreground capitalize">
+                  {currentPlan.type} plan
                 </p>
               </div>
               <span className="text-xl font-bold text-primary">₹{currentPlan.price}</span>
@@ -255,7 +252,7 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({
             >
               {isProcessing ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin mr-2" />
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
                   Processing...
                 </>
               ) : (

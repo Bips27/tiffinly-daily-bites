@@ -104,83 +104,13 @@ const OnboardingSuccess = () => {
 const ModifiedSubscriptionPlans = () => {
   const navigate = useNavigate();
   
-  const handlePlanSelect = async (planId: string) => {
+  const handlePlanSelect = async (plan: any) => {
     // Simulate plan selection process
     await new Promise(resolve => setTimeout(resolve, 1500));
     
-    // Get plan data from the existing plans array
-    const plans = [
-      {
-        id: 'weekly',
-        name: 'Weekly Plan',
-        duration: '7 days',
-        price: 899,
-        originalPrice: 1050,
-        meals: 21,
-        mealsPerDay: '3 meals/day',
-        icon: 'Calendar',
-        color: 'text-accent',
-        bgColor: 'bg-accent/10',
-        features: [
-          'Breakfast, Lunch & Dinner',
-          'Fresh ingredients daily',
-          'Cancel anytime',
-          'Free delivery'
-        ],
-        popular: false
-      },
-      {
-        id: 'monthly',
-        name: 'Monthly Plan',
-        duration: '30 days',
-        price: 2999,
-        originalPrice: 4200,
-        meals: 90,
-        mealsPerDay: '3 meals/day',
-        icon: 'Crown',
-        color: 'text-primary',
-        bgColor: 'bg-primary/10',
-        features: [
-          'Breakfast, Lunch & Dinner',
-          'Premium meal options',
-          'Priority customer support',
-          'Free delivery',
-          'Customization included',
-          'Nutrition tracking'
-        ],
-        popular: true,
-        savings: '29% OFF'
-      },
-      {
-        id: 'premium',
-        name: 'Premium Monthly',
-        duration: '30 days',
-        price: 4999,
-        originalPrice: 6300,
-        meals: 90,
-        mealsPerDay: '3 meals/day',
-        icon: 'Star',
-        color: 'text-warning',
-        bgColor: 'bg-warning/10',
-        features: [
-          'Gourmet meal options',
-          'Chef specials included',
-          'Unlimited customizations',
-          'Premium ingredients',
-          'Dedicated support',
-          'Free delivery',
-          'Nutrition consultation'
-        ],
-        popular: false,
-        savings: '21% OFF'
-      }
-    ];
-    
-    const selectedPlanData = plans.find(p => p.id === planId);
-    
     // Navigate to meal preferences with selected plan
     navigate('/onboarding/preferences', { 
-      state: { plan: selectedPlanData }
+      state: { plan }
     });
   };
 

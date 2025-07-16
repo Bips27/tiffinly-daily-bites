@@ -1,29 +1,133 @@
-import React, { useState } from 'react';
-import { Phone, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Phone, ArrowRight, Eye, EyeOff, Mail, User, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 import tiffinlyLogo from '@/assets/tiffinly-logo.png';
 
 export const LoginScreen = () => {
-  const [step, setStep] = useState<'phone' | 'otp'>('phone');
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
+  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    firstName: '',
+    lastName: '',
+    phone: '',
+    confirmPassword: ''
+  });
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  
   const navigate = useNavigate();
+  const { signIn, signUp, user, loading: authLoading } = useAuth();
+  const { toast } = useToast();
 
-  const handlePhoneSubmit = () => {
-    if (phone.length === 10) {
-      setStep('otp');
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (user && !authLoading) {
+      if (user.profile?.onboarding_completed) {
+        navigate('/');
+      } else {
+        navigate('/onboarding/plans');
+      }
+    }
+  }, [user, authLoading, navigate]);
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    setError('');
+  };
+
+  const validateForm = () => {
+    if (!formData.email || !formData.password) {
+      setError('Email and password are required');
+      return false;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      setError('Please enter a valid email address');
+      return false;
+    }
+
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return false;
+    }
+
+    if (mode === 'signup') {
+      if (!formData.phone || formData.phone.length !== 10) {
+        setError('Please enter a valid 10-digit phone number');
+        return false;
+      }
+
+      if (formData.password !== formData.confirmPassword) {
+        setError('Passwords do not match');
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      if (mode === 'login') {
+        const { error } = await signIn(formData.email, formData.password);
+        
+        if (error) {
+          setError(error.message);
+        } else {
+          toast({
+            title: "Welcome back!",
+            description: "You have successfully logged in.",
+          });
+        }
+      } else {
+        const { error } = await signUp(
+          formData.email, 
+          formData.password, 
+          formData.phone,
+          formData.firstName,
+          formData.lastName
+        );
+        
+        if (error) {
+          setError(error.message);
+        } else {
+          toast({
+            title: "Account created!",
+            description: "Please check your email to verify your account.",
+          });
+          // Auto redirect will happen via useEffect when user state changes
+        }
+      }
+    } catch (err) {
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleOtpSubmit = () => {
-    if (otp.length === 6) {
-      navigate('/');
-    }
-  };
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-subtle flex flex-col">
@@ -36,104 +140,146 @@ export const LoginScreen = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 px-6">
+      <div className="flex-1 px-6 max-w-md mx-auto w-full">
         <Card className="p-6 shadow-elevated animate-slide-up">
-          {step === 'phone' ? (
-            <div className="space-y-6">
-              <div className="text-center">
-                <h2 className="text-2xl font-bold mb-2">Welcome Back!</h2>
-                <p className="text-muted-foreground">
-                  Enter your mobile number to continue
-                </p>
+          <div className="space-y-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold mb-2">
+                {mode === 'login' ? 'Welcome Back!' : 'Create Account'}
+              </h2>
+              <p className="text-muted-foreground">
+                {mode === 'login' 
+                  ? 'Sign in to your Tiffinly account' 
+                  : 'Join Tiffinly for delicious home-cooked meals'
+                }
+              </p>
+            </div>
+
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-4">
+              {/* Email */}
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  type="email"
+                  placeholder="Enter email address"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  className="pl-12 h-12"
+                />
               </div>
 
-              <div className="space-y-4">
+              {/* First and Last Name for Signup */}
+              {mode === 'signup' && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Input
+                      placeholder="First name"
+                      value={formData.firstName}
+                      onChange={(e) => handleInputChange('firstName', e.target.value)}
+                      className="pl-12 h-12"
+                    />
+                  </div>
+                  <Input
+                    placeholder="Last name"
+                    value={formData.lastName}
+                    onChange={(e) => handleInputChange('lastName', e.target.value)}
+                    className="h-12"
+                  />
+                </div>
+              )}
+
+              {/* Phone for Signup */}
+              {mode === 'signup' && (
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input
                     type="tel"
-                    placeholder="Enter mobile number"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                    className="pl-12 h-12 text-lg"
+                    placeholder="Enter 10-digit phone number"
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    className="pl-12 h-12"
                   />
                 </div>
+              )}
 
-                <Button 
-                  onClick={handlePhoneSubmit}
-                  disabled={phone.length !== 10}
-                  className="w-full"
-                  size="lg"
+              {/* Password */}
+              <div className="relative">
+                <Input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Enter password"
+                  value={formData.password}
+                  onChange={(e) => handleInputChange('password', e.target.value)}
+                  className="h-12 pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2"
                 >
-                  Send OTP
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5 text-muted-foreground" />
+                  ) : (
+                    <Eye className="w-5 h-5 text-muted-foreground" />
+                  )}
+                </button>
               </div>
 
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">
-                  Don't have an account?{' '}
-                  <button className="text-primary font-medium">
-                    Sign up
-                  </button>
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <div className="text-center">
-                <h2 className="text-2xl font-bold mb-2">Verify OTP</h2>
-                <p className="text-muted-foreground">
-                  Enter the 6-digit code sent to +91 {phone}
-                </p>
-              </div>
-
-              <div className="space-y-4">
+              {/* Confirm Password for Signup */}
+              {mode === 'signup' && (
                 <div className="relative">
                   <Input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Enter 6-digit OTP"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    className="h-12 text-lg text-center tracking-widest"
-                    maxLength={6}
+                    type="password"
+                    placeholder="Confirm password"
+                    value={formData.confirmPassword}
+                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                    className="h-12"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="w-5 h-5 text-muted-foreground" />
-                    ) : (
-                      <Eye className="w-5 h-5 text-muted-foreground" />
-                    )}
-                  </button>
                 </div>
+              )}
 
-                <Button 
-                  onClick={handleOtpSubmit}
-                  disabled={otp.length !== 6}
-                  className="w-full"
-                  size="lg"
-                >
-                  Verify & Continue
-                </Button>
-
-                <div className="flex justify-between text-sm">
-                  <button 
-                    onClick={() => setStep('phone')}
-                    className="text-muted-foreground"
-                  >
-                    Change number
-                  </button>
-                  <button className="text-primary font-medium">
-                    Resend OTP
-                  </button>
-                </div>
-              </div>
+              <Button 
+                onClick={handleSubmit}
+                disabled={loading}
+                className="w-full"
+                size="lg"
+              >
+                {loading ? (
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    {mode === 'login' ? 'Signing in...' : 'Creating account...'}
+                  </div>
+                ) : (
+                  <>
+                    {mode === 'login' ? 'Sign In' : 'Create Account'}
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </>
+                )}
+              </Button>
             </div>
-          )}
+
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">
+                {mode === 'login' ? "Don't have an account? " : "Already have an account? "}
+                <button 
+                  onClick={() => {
+                    setMode(mode === 'login' ? 'signup' : 'login');
+                    setError('');
+                  }}
+                  className="text-primary font-medium"
+                >
+                  {mode === 'login' ? 'Sign up' : 'Sign in'}
+                </button>
+              </p>
+            </div>
+          </div>
         </Card>
 
         {/* Footer */}
