@@ -21,6 +21,7 @@ import { SavedAddresses } from "./components/screens/SavedAddresses";
 import { Notifications } from "./components/screens/Notifications";
 import { Settings } from "./components/screens/Settings";
 import { HelpSupport } from "./components/screens/HelpSupport";
+import { OnboardingFlow } from "./components/screens/OnboardingFlow";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,7 +34,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/splash" element={<SplashScreen />} />
-          <Route path="/onboarding" element={<OnboardingScreen />} />
+          <Route path="/onboarding/*" element={<OnboardingFlow />} />
           <Route path="/login" element={<LoginScreen />} />
           <Route path="/" element={<MobileLayout />}>
             <Route index element={<Dashboard />} />

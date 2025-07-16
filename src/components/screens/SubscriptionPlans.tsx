@@ -71,7 +71,15 @@ const plans = [
   }
 ];
 
-export const SubscriptionPlans = () => {
+interface SubscriptionPlansProps {
+  onPlanSelect?: (planId: string) => Promise<void>;
+  isOnboarding?: boolean;
+}
+
+export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ 
+  onPlanSelect,
+  isOnboarding = false 
+}) => {
   const navigate = useNavigate();
   const [selectedPlan, setSelectedPlan] = useState('monthly');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -79,15 +87,19 @@ export const SubscriptionPlans = () => {
   const handleSubscribe = async (planId: string) => {
     setIsProcessing(true);
     
-    // Simulate subscription process
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    if (onPlanSelect) {
+      await onPlanSelect(planId);
+    } else {
+      // Default behavior for non-onboarding flow
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      navigate('/subscription-success', { 
+        state: { 
+          plan: plans.find(p => p.id === planId)
+        } 
+      });
+    }
     
     setIsProcessing(false);
-    navigate('/subscription-success', { 
-      state: { 
-        plan: plans.find(p => p.id === planId)
-      } 
-    });
   };
 
   const currentPlan = plans.find(p => p.id === selectedPlan);
