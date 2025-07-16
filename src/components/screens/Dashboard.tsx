@@ -99,9 +99,9 @@ export const Dashboard = () => {
             className="w-full h-full object-cover"
           />
         </div>
-        <div className="relative p-6 text-white">
+        <div className="relative p-6 text-primary-foreground">
           <h2 className="text-2xl font-bold mb-2">Today's Menu</h2>
-          <p className="text-white/90 mb-4">Fresh meals prepared with love</p>
+          <p className="text-primary-foreground/90 mb-4">Fresh meals prepared with love</p>
           
           {/* Next meal countdown */}
           <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm rounded-xl p-4">
