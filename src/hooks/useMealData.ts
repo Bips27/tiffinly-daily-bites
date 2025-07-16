@@ -75,11 +75,10 @@ export const useMealData = () => {
   };
 
   const canCustomizeMeal = (deliveryTime: Date) => {
-    // Test time: 8:00 AM
-    const testTime = new Date();
-    testTime.setHours(8, 0, 0, 0);
+    // Real-time logic: Current time must be at least 2 hours before delivery
+    const now = new Date();
     const cutoffTime = new Date(deliveryTime.getTime() - 2 * 60 * 60 * 1000); // 2 hours before
-    return testTime < cutoffTime;
+    return now < cutoffTime;
   };
 
   const getCustomizationStatus = (meal: Meal) => {
