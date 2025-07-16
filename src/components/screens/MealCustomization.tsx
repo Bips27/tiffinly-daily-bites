@@ -316,7 +316,7 @@ export const MealCustomization = () => {
                 size="lg"
               >
                 <ShoppingCart className="w-4 h-4 mr-2" />
-                Proceed to Checkout
+                Add to Cart
               </Button>
               {!canCustomize && (
                 <p className="text-xs text-destructive mt-2 text-center">

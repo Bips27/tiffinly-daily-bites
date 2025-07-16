@@ -15,6 +15,12 @@ import { SubscriptionPlans } from "./components/screens/SubscriptionPlans";
 import { OrderTracking } from "./components/screens/OrderTracking";
 import { Profile } from "./components/screens/Profile";
 import { Wallet } from "./components/screens/Wallet";
+import { Cart } from "./components/screens/Cart";
+import { OrderHistory } from "./components/screens/OrderHistory";
+import { SavedAddresses } from "./components/screens/SavedAddresses";
+import { Notifications } from "./components/screens/Notifications";
+import { Settings } from "./components/screens/Settings";
+import { HelpSupport } from "./components/screens/HelpSupport";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +44,12 @@ const App = () => (
             <Route path="orders" element={<OrderTracking />} />
             <Route path="profile" element={<Profile />} />
             <Route path="wallet" element={<Wallet />} />
+            <Route path="cart" element={<Cart />} />
+            <Route path="order-history" element={<OrderHistory />} />
+            <Route path="addresses" element={<SavedAddresses />} />
+            <Route path="notifications" element={<Notifications />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="support" element={<HelpSupport />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
